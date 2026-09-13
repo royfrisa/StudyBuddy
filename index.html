@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>StudyBuddy</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- MAIN HEADER -->
+        <header class="app-header" id="app-header" style="display: none;">
+            <button class="icon-btn profile-shortcut" onclick="navigateTo('screen-profile', document.getElementById('nav-profile'))">
+                <div class="header-avatar" style="background-image: url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300')"></div>
+            </button>
+            <h1 class="logo">StudyBuddy <span class="logo-dot">.</span></h1>
+            <button class="icon-btn relative">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                <span class="notification-badge"></span>
+            </button>
+        </header>
+
+        <!-- SCREEN 1: SPLASH / LOGIN -->
+        <section id="screen-splash" class="screen active">
+            <div class="splash-bg"></div>
+            <div class="onboarding-content">
+                <div class="brand-hero">
+                    <div class="brand-icon-wrapper">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+                    </div>
+                    <h1 class="logo-large">StudyBuddy</h1>
+                </div>
+                
+                <div class="splash-text">
+                    <h2>Never study alone.</h2>
+                    <p class="subtitle">Swipe to find your perfect study partner at KBU. Match, chat, and ace your exams together.</p>
+                </div>
+                
+                <div class="input-group">
+                    <button class="btn-google" onclick="login()" id="login-btn">
+                        <svg viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                        <span id="login-text">Continue with Google</span>
+                    </button>
+                    <p class="terms-text">By continuing, you agree to our <strong>Terms</strong> & <strong>Privacy Policy</strong>.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 1.5: ONBOARDING SETUP WIZARD (NEW) -->
+        <section id="screen-onboarding" class="screen bg-subtle">
+            <div class="onboarding-wizard-container">
+                <div class="wizard-header">
+                    <span class="wizard-step-indicator">Step 1 of 2</span>
+                    <h2>Customize Your Profile</h2>
+                    <p class="subtitle">Tell us what you're studying so we can find your best matches.</p>
+                </div>
+
+                <div class="wizard-form">
+                    <div class="form-group">
+                        <label>Your Full Name / Alias</label>
+                        <input type="text" id="setup-name" value="Group Two" class="wizard-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Select Major</label>
+                        <select id="setup-major" class="wizard-input">
+                            <option value="Digital Tech">Digital Technology (DTI)</option>
+                            <option value="Civil Engineering">Civil Engineering</option>
+                            <option value="Thai for Comm">Thai for Communication</option>
+                            <option value="Business Admin">Business Administration</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Target Subjects (Pick multiple)</label>
+                        <div class="checkbox-pill-group">
+                            <button type="button" class="select-pill active" onclick="toggleSelectPill(this)">DTI224</button>
+                            <button type="button" class="select-pill active" onclick="toggleSelectPill(this)">GEN102</button>
+                            <button type="button" class="select-pill" onclick="toggleSelectPill(this)">DTI201</button>
+                            <button type="button" class="select-pill" onclick="toggleSelectPill(this)">GEN132</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="wizard-footer">
+                    <button class="btn-primary" style="width: 100%;" onclick="completeOnboarding()">Start Swiping 🚀</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 2: HOME / DISCOVER -->
+        <section id="screen-home" class="screen bg-subtle">
+            <div class="filter-bar-container">
+                <div class="filter-bar">
+                    <button class="filter-chip active" onclick="filterCards('All', this)">For You</button>
+                    <button class="filter-chip" onclick="filterCards('DTI224', this)">DTI224</button>
+                    <button class="filter-chip" onclick="filterCards('GEN102', this)">GEN102</button>
+                    <button class="filter-chip" onclick="filterCards('GEN132', this)">GEN132</button>
+                </div>
+            </div>
+            
+            <div class="card-area" id="card-container">
+                <!-- Javascript injects cards here -->
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn-action btn-decline" onclick="manualSwipe('left')">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+                <button class="btn-action btn-super" onclick="manualSwipe('right')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                </button>
+                <button class="btn-action btn-request" onclick="manualSwipe('right')">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                </button>
+            </div>
+        </section>
+
+        <!-- MATCH OVERLAY -->
+        <div id="match-overlay" class="match-overlay" style="display: none;">
+            <div class="match-particles"></div>
+            <div class="match-content">
+                <div class="match-badge">New Connection</div>
+                <h1 class="match-title">It's a Match!</h1>
+                <p class="match-subtitle">You and <span id="match-name" class="highlight-text">Partner</span> both want to study <span id="match-subject" class="highlight-text">Subject</span> together.</p>
+                
+                <div class="match-avatars">
+                    <div class="match-avatar my-avatar" style="background-image: url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300')"></div>
+                    <div class="match-avatar partner-avatar" id="match-image" style="background-image: url('')">
+                        <div class="online-indicator-large"></div>
+                    </div>
+                </div>
+
+                <button class="btn-primary" style="margin-bottom: 16px; width: 100%;" onclick="goToChatFromMatch()">Say Hello 👋</button>
+                <button class="btn-secondary" onclick="closeMatchScreen()">Keep Swiping</button>
+            </div>
+        </div>
+
+        <!-- SCREEN 3: SCHEDULE -->
+        <section id="screen-schedule" class="screen bg-subtle">
+            <div class="page-header-title">
+                <h2>Schedule</h2>
+                <button class="icon-btn bg-white shadow-sm"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+            </div>
+            
+            <div class="schedule-list">
+                <h4 class="section-label">Upcoming This Week</h4>
+                
+                <div class="schedule-card">
+                    <div class="schedule-time-badge active">
+                        <span class="day">TODAY</span>
+                        <span class="time">4:00 PM</span>
+                    </div>
+                    <div class="schedule-details">
+                        <div class="schedule-header">
+                            <h4>DTI224 Session</h4>
+                        </div>
+                        <div class="partner-row">
+                            <div class="tiny-avatar" style="background-image: url('https://thumbs.dreamstime.com/b/college-boy-holding-books-blurred-students-park-portrait-standing-35784759.jpg')"></div>
+                            <p>Paing Htoo Kyaw</p>
+                        </div>
+                        <div class="location-row">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                            <span>Common Room Floor 2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="schedule-card inactive">
+                    <div class="schedule-time-badge">
+                        <span class="day">TOMORROW</span>
+                        <span class="time">10:00 AM</span>
+                    </div>
+                    <div class="schedule-details">
+                        <div class="schedule-header">
+                            <h4>GEN102 Lab Prep</h4>
+                        </div>
+                        <div class="partner-row">
+                            <div class="tiny-avatar" style="background-image: url('https://img.magnific.com/free-photo/portrait-student-boy_23-2147668972.jpg?semt=ais_test_b&w=740&q=80')"></div>
+                            <p>Han Win Htun</p>
+                        </div>
+                        <div class="location-row">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                            <span>Building D, Study Room</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 4: CHAT LIST -->
+        <section id="screen-chat" class="screen bg-subtle">
+            <div class="page-header-title">
+                <h2>Messages</h2>
+                <div class="header-actions">
+                    <button class="icon-btn bg-white shadow-sm"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
+                </div>
+            </div>
+
+            <div class="active-matches-strip">
+                <p class="section-label" style="padding-left: 20px;">Recent Matches</p>
+                <div class="matches-scroll">
+                    <div class="match-bubble" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRBoqz5mPMTPK4QekIl29l8XQBpiHoEiq4M0oi7xDSsnzuRuHfyTfXax4I&s=10')"><div class="online-dot"></div></div>
+                    <div class="match-bubble" style="background-image: url('https://img.magnific.com/free-photo/portrait-student-boy_23-2147668972.jpg?semt=ais_test_b&w=740&q=80')"></div>
+                    <div class="match-bubble placeholder">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><path d="M2 12h20"></path><path d="M12 2v20"></path></svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-list" id="chat-list-container">
+                <div class="chat-item unread" onclick="openChatRoom('Paing Htoo Kyaw', 'https://thumbs.dreamstime.com/b/college-boy-holding-books-blurred-students-park-portrait-standing-35784759.jpg')">
+                    <div class="chat-avatar" style="background-image: url('https://thumbs.dreamstime.com/b/college-boy-holding-books-blurred-students-park-portrait-standing-35784759.jpg')">
+                        <div class="online-dot"></div>
+                    </div>
+                    <div class="chat-info">
+                        <div class="chat-top-row">
+                            <h4>Paing Htoo Kyaw</h4>
+                            <span class="chat-time text-primary">2m ago</span>
+                        </div>
+                        <p class="message-preview">Perfect! See you there 🚀</p>
+                    </div>
+                    <div class="unread-badge">1</div>
+                </div>
+                
+                <div class="chat-item" onclick="openChatRoom('Han Win Htun', 'https://img.magnific.com/free-photo/portrait-student-boy_23-2147668972.jpg?semt=ais_test_b&w=740&q=80')">
+                    <div class="chat-avatar" style="background-image: url('https://img.magnific.com/free-photo/portrait-student-boy_23-2147668972.jpg?semt=ais_test_b&w=740&q=80')"></div>
+                    <div class="chat-info">
+                        <div class="chat-top-row">
+                            <h4>Han Win Htun</h4>
+                            <span class="chat-time">Yesterday</span>
+                        </div>
+                        <p class="message-preview">Did you finish the assignment codes?</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 4.5: INTERNAL CHAT ROOM -->
+        <section id="screen-chat-room" class="screen chat-room-bg" style="z-index: 20;">
+            <div class="chat-room-header shadow-sm">
+                <button class="icon-btn-plain" onclick="closeChatRoom()">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <div class="chat-room-profile">
+                    <div class="chat-avatar-small" id="chat-room-avatar" style="background-image: url('')"></div>
+                    <div class="chat-header-text">
+                        <h3 id="chat-room-name">Name</h3>
+                        <span class="online-status">Online now</span>
+                    </div>
+                </div>
+                <button class="icon-btn-plain text-primary">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                </button>
+            </div>
+            
+            <div class="chat-messages-area" id="chat-messages-scroll">
+                <div class="chat-date-divider"><span>Today, 3:42 PM</span></div>
+                
+                <div class="message-wrapper received">
+                    <div class="message-bubble">
+                        <p>Hey! I saw we matched for our study session.</p>
+                    </div>
+                </div>
+                
+                <div class="message-wrapper sent">
+                    <div class="message-bubble">
+                        <p>Hi! Yes definitely. Ready when you are.</p>
+                    </div>
+                    <span class="message-status">Read</span>
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <button class="icon-btn-plain text-muted"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+                <div class="input-wrapper">
+                    <input type="text" id="chat-message-input" placeholder="Type a message..." class="chat-input-field" onkeypress="handleChatKeyPress(event)">
+                    <button class="icon-btn-plain text-primary sticker-btn" onclick="sendChatMessage()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 5: PROFILE -->
+        <section id="screen-profile" class="screen bg-subtle">
+            <div class="profile-hero">
+                <div class="profile-avatar-wrapper">
+                    <div class="profile-avatar-large" style="background-image: url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300')"></div>
+                    <button class="edit-avatar-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>
+                </div>
+                <h3 id="display-profile-name">Group 2</h3>
+                <p class="profile-email">grouptwo@kbu.ac.th</p>
+                <span class="profile-badge" id="display-profile-major">Kasem Bundit University</span>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="profile-stats">
+                <div class="stat-box">
+                    <h4>12</h4>
+                    <p>Sessions</p>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-box">
+                    <h4>4</h4>
+                    <p>Matches</p>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-box">
+                    <h4>4.9</h4>
+                    <p>Rating</p>
+                </div>
+            </div>
+
+            <!-- Settings Group -->
+            <div class="settings-group">
+                <h4 class="settings-label">Account</h4>
+                <div class="settings-card">
+                    <div class="settings-item">
+                        <div class="settings-item-left">
+                            <div class="settings-icon bg-indigo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+                            <span>Major & Courses</span>
+                        </div>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--border-dark)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    </div>
+                    <div class="settings-divider"></div>
+                    <div class="settings-item">
+                        <div class="settings-item-left">
+                            <div class="settings-icon bg-emerald"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path></svg></div>
+                            <span>Notifications</span>
+                        </div>
+                        <div class="toggle-switch active"><div class="toggle-knob"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <div class="settings-card">
+                    <div class="settings-item text-danger" onclick="logout()" style="justify-content: center; font-weight: 600;">
+                        <span>Log Out</span>
+                    </div>
+                </div>
+                <p class="app-version">StudyBuddy v1.0.0</p>
+            </div>
+        </section>
+
+        <!-- BOTTOM NAVIGATION -->
+        <nav class="bottom-nav" id="bottom-nav" style="display: none;">
+            <div class="nav-item active" id="nav-home" onclick="navigateTo('screen-home', this)">
+                <div class="nav-icon-box">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </div>
+                <span>Home</span>
+            </div>
+            <div class="nav-item" id="nav-schedule" onclick="navigateTo('screen-schedule', this)">
+                <div class="nav-icon-box">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+                <span>Schedule</span>
+            </div>
+            <div class="nav-item relative" id="nav-chat" onclick="navigateTo('screen-chat', this)">
+                <div class="nav-icon-box">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    <div class="nav-badge"></div>
+                </div>
+                <span>Chat</span>
+            </div>
+            <div class="nav-item" id="nav-profile" onclick="navigateTo('screen-profile', this)">
+                <div class="nav-icon-box">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <span>Profile</span>
+            </div>
+        </nav>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
