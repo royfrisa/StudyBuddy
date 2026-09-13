@@ -1,314 +1,1670 @@
-let matchOccurred = false;
-let currentMatchPartner = null;
-let currentMatchImage = null;
 
-// Database of student cards
-const allStudents = [
+/* ============================================================
+   STUDYBUDDY
+   Frontend prototype / demo interaction
+============================================================ */
+
+
+/* ============================================================
+   DEMO DATA
+============================================================ */
+
+const students = [
+
     {
-        name: "Kyaw Zaw Win", id: "250702408173", major: "Civil Engineering", subject: "GEN132", time: "Tomorrow, 10:00 AM",
-        image: "https://img.magnific.com/free-photo/portrait-student-boy_23-2147668972.jpg?semt=ais_test_b&w=740&q=80"
+        id: 1,
+
+        name: "Paing Htoo Kyaw",
+        age: 20,
+
+        major: "Digital Technology",
+
+        subjects: [
+            "DTI224",
+            "GEN102"
+        ],
+
+        distance: "1.2 km away",
+
+        match: 92,
+
+        bio:
+            "Preparing for the DTI224 exam and looking for someone to review with.",
+
+        availability:
+            "Afternoon · Library",
+
+        image:
+            "https://thumbs.dreamstime.com/b/college-boy-holding-books-blurred-students-park-portrait-standing-35784759.jpg",
+
+        online: true
+
     },
+
+
     {
-        name: "Aung Maw Oo", id: "250702874274", major: "Thai for Comm", subject: "GEN102", time: "Friday, 1:00 PM",
-        image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRBoqz5mPMTPK4QekIl29l8XQBpiHoEiq4M0oi7xDSsnzuRuHfyTfXax4I&s=10"
+        id: 2,
+
+        name: "Han Win Htun",
+        age: 20,
+
+        major: "Digital Technology",
+
+        subjects: [
+            "GEN102",
+            "GEN132"
+        ],
+
+        distance: "2.4 km away",
+
+        match: 86,
+
+        bio:
+            "Usually studies in the afternoon and likes working through practice questions together.",
+
+        availability:
+            "Afternoon · Study Room",
+
+        image:
+            "https://img.magnific.com/free-photo/portrait-student-boy_23-2147668972.jpg?semt=ais_test_b&w=740&q=80",
+
+        online: false
+
     },
+
+
     {
-        name: "Paing Htoo Kyaw", id: "250702408381", major: "Digital Tech", subject: "DTI224", time: "Today, 4:00 PM",
-        image: "https://thumbs.dreamstime.com/b/college-boy-holding-books-blurred-students-park-portrait-standing-35784759.jpg"
+        id: 3,
+
+        name: "Nay Chi",
+        age: 19,
+
+        major: "Digital Technology",
+
+        subjects: [
+            "DTI224",
+            "DTI201"
+        ],
+
+        distance: "3.1 km away",
+
+        match: 82,
+
+        bio:
+            "Looking for someone to prepare for programming and data classes with.",
+
+        availability:
+            "Evening · Cafe",
+
+        image:
+            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=900",
+
+        online: true
+
     }
+
 ];
 
-function navigateTo(screenId, navElement = null) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    const targetScreen = document.getElementById(screenId);
-    targetScreen.classList.add('active');
-    targetScreen.scrollTop = 0;
 
-    if (navElement) {
-        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-        navElement.classList.add('active');
-    } else if (screenId !== 'screen-chat-room' && screenId !== 'screen-splash' && screenId !== 'screen-onboarding') {
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.classList.remove('active');
-            if (item.id === `nav-${screenId.split('-')[1]}`) {
-                item.classList.add('active');
-            }
-        });
-    }
+/* ============================================================
+   APPLICATION STATE
+============================================================ */
+
+let currentScreen = "screen-splash";
+
+let currentStudentIndex = 0;
+
+let currentStudent = students[0];
+
+let onboardingStep = 1;
+
+let selectedSubjects = [
+    "DTI224",
+    "GEN102"
+];
+
+let savedProfiles = [];
+
+let isLoggedIn = false;
+
+
+/* ============================================================
+   DOM HELPERS
+============================================================ */
+
+function get(id) {
+    return document.getElementById(id);
 }
 
-// Simulated Google Auth leading into Profile Onboarding Wizard
-function login() {
-    const btnText = document.getElementById('login-text');
-    const originalText = btnText.innerText;
-    
-    btnText.innerHTML = "Authenticating...";
-    document.getElementById('login-btn').style.opacity = "0.8";
-    document.getElementById('login-btn').style.pointerEvents = "none";
-    
-    setTimeout(() => {
-        navigateTo('screen-onboarding');
-        btnText.innerHTML = originalText;
-        document.getElementById('login-btn').style.opacity = "1";
-        document.getElementById('login-btn').style.pointerEvents = "auto";
-    }, 1000);
-}
 
-function toggleSelectPill(btn) {
-    btn.classList.toggle('active');
-}
+/* ============================================================
+   INITIALIZATION
+============================================================ */
 
-function completeOnboarding() {
-    const customName = document.getElementById('setup-name').value;
-    const customMajor = document.getElementById('setup-major').value;
-    
-    if(customName) {
-        document.getElementById('display-profile-name').innerText = customName;
-        document.getElementById('display-profile-major').innerText = customMajor;
-    }
+document.addEventListener("DOMContentLoaded", () => {
 
-    document.getElementById('app-header').style.display = 'flex';
-    document.getElementById('bottom-nav').style.display = 'flex';
-    
-    navigateTo('screen-home', document.getElementById('nav-home'));
-    renderCards(allStudents);
-}
+    showWelcomeState();
 
-function logout() {
-    navigateTo('screen-splash');
-    document.getElementById('app-header').style.display = 'none';
-    document.getElementById('bottom-nav').style.display = 'none';
-    matchOccurred = false;
-}
+    setupSwipeEvents();
 
-// Dynamic Course Filtering
-function filterCards(subjectTag, button) {
-    document.querySelectorAll('.filter-chip').forEach(btn => btn.classList.remove('active'));
-    button.classList.add('active');
+    renderCards();
 
-    if (subjectTag === 'All') {
-        renderCards(allStudents);
-    } else {
-        const filtered = allStudents.filter(s => s.subject === subjectTag);
-        renderCards(filtered);
-    }
-}
+});
 
-const cardContainer = document.getElementById('card-container');
 
-function renderCards(dataSet) {
-    cardContainer.innerHTML = ''; 
-    
-    if(dataSet.length === 0) {
-        cardContainer.innerHTML = `
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 20px;">
-                <h3 style="font-size: 18px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">No students found</h3>
-                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">No profiles are available for this specific tag right now.</p>
-                <button class="btn-primary" style="padding: 12px 24px; font-size: 14px;" onclick="filterCards('All', document.querySelector('.filter-chip'))">Reset Filter</button>
-            </div>`;
+/* ============================================================
+   SCREEN NAVIGATION
+============================================================ */
+
+function navigateTo(screenId, navButton = null) {
+
+    const screens = document.querySelectorAll(".screen");
+
+    screens.forEach(screen => {
+
+        screen.classList.remove("active");
+
+    });
+
+
+    const target = get(screenId);
+
+    if (!target) {
+        console.warn(`Screen not found: ${screenId}`);
         return;
     }
 
-    dataSet.slice().reverse().forEach((student, index) => {
-        const card = document.createElement('div');
-        card.classList.add('card');
-        card.style.backgroundImage = `url('${student.image}')`;
-        card.dataset.name = student.name;
-        card.dataset.subject = student.subject;
-        card.dataset.image = student.image;
-        
-        if (index < dataSet.length - 1) {
-            const scale = 1 - ((dataSet.length - 1 - index) * 0.05);
-            card.style.transform = `scale(${scale})`;
-        }
-        
-        card.innerHTML = `
-            <div class="card-overlay"></div>
-            <div class="card-content">
-                <h2 class="student-name">${student.name}</h2>
-                <div class="student-meta">
-                    <p><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg> ${student.major}</p>
-                    <p><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Free: ${student.time}</p>
-                </div>
-                <div class="card-pills">
-                    <div class="pill glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> <span>${student.subject}</span></div>
-                    <div class="pill glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg><span>1.2 km away</span></div>
-                </div>
-            </div>
-        `;
-        
-        cardContainer.appendChild(card);
-        initSwipe(card);
-    });
-}
 
-function initSwipe(card) {
-    let isDragging = false, startX = 0, currentX = 0;
-    const getPos = (e) => e.touches ? e.touches[0].clientX : e.clientX;
+    target.classList.add("active");
 
-    const onDragStart = (e) => {
-        isDragging = true;
-        startX = getPos(e);
-        card.style.transition = 'none'; 
-    };
+    currentScreen = screenId;
 
-    const onDragMove = (e) => {
-        if (!isDragging) return;
-        currentX = getPos(e);
-        const deltaX = currentX - startX;
-        const rotate = deltaX * 0.05;
-        card.style.transform = `translate3d(${deltaX}px, 0, 0) rotate(${rotate}deg)`;
-    };
 
-    const onDragEnd = () => {
-        if (!isDragging) return;
-        isDragging = false;
-        
-        const deltaX = currentX - startX;
-        card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'; 
-        const threshold = window.innerWidth * 0.3;
+    /*
+        Main application screens show the
+        app header and bottom navigation.
+    */
 
-        if (deltaX > threshold) {
-            swipeOut(card, 'right');
-        } else if (deltaX < -threshold) {
-            swipeOut(card, 'left');
-        } else {
-            card.style.transform = `translate3d(0px, 0, 0) rotate(0deg)`;
-        }
-    };
+    const appScreens = [
+        "screen-home",
+        "screen-profile-detail",
+        "screen-schedule",
+        "screen-chat",
+        "screen-profile"
+    ];
 
-    card.addEventListener('mousedown', onDragStart);
-    window.addEventListener('mousemove', onDragMove);
-    window.addEventListener('mouseup', onDragEnd);
-    card.addEventListener('touchstart', onDragStart, {passive: true});
-    window.addEventListener('touchmove', onDragMove, {passive: true});
-    window.addEventListener('touchend', onDragEnd);
-}
+    const isAppScreen =
+        appScreens.includes(screenId);
 
-function manualSwipe(direction) {
-    const cards = document.querySelectorAll('.card');
-    if (cards.length > 0) {
-        swipeOut(cards[cards.length - 1], direction);
+
+    const header = get("app-header");
+
+    const navigation =
+        get("bottom-navigation");
+
+
+    if (isAppScreen) {
+
+        header.classList.add("visible");
+
+        navigation.style.display = "grid";
+
+    } else {
+
+        header.classList.remove("visible");
+
+        navigation.style.display = "none";
+
     }
+
+
+    /*
+        Update active bottom navigation.
+    */
+
+    if (navButton) {
+
+        document
+            .querySelectorAll(".nav-item")
+            .forEach(item => {
+                item.classList.remove("active");
+            });
+
+        navButton.classList.add("active");
+
+    } else {
+
+        updateNavigationState(screenId);
+
+    }
+
+
+    /*
+        Scroll selected screen to top.
+    */
+
+    target.scrollTop = 0;
+
 }
 
-function swipeOut(card, direction) {
-    const multiplier = direction === 'right' ? 1 : -1;
-    card.style.transition = 'transform 0.4s ease-out';
-    card.style.transform = `translate3d(${1000 * multiplier}px, 0, 0) rotate(${45 * multiplier}deg)`;
-    
-    setTimeout(() => {
-        const studentName = card.dataset.name;
-        const studentSubject = card.dataset.subject;
-        const studentImage = card.dataset.image;
-        
-        card.remove();
-        
-        const remainingCards = document.querySelectorAll('.card');
-        remainingCards.forEach((c, index) => {
-            const scale = 1 - ((remainingCards.length - 1 - index) * 0.05);
-            c.style.transition = 'transform 0.3s ease';
-            c.style.transform = `scale(${scale})`;
+
+/* ============================================================
+   NAVIGATION STATE
+============================================================ */
+
+function updateNavigationState(screenId) {
+
+    const mapping = {
+
+        "screen-home":
+            "nav-discover",
+
+        "screen-schedule":
+            "nav-sessions",
+
+        "screen-chat":
+            "nav-messages",
+
+        "screen-profile":
+            "nav-profile"
+
+    };
+
+
+    document
+        .querySelectorAll(".nav-item")
+        .forEach(item => {
+            item.classList.remove("active");
         });
 
-        if (direction === 'right' && !matchOccurred) {
-            matchOccurred = true;
-            showMatchScreen(studentName, studentSubject, studentImage);
+
+    const navId = mapping[screenId];
+
+    if (navId) {
+
+        const nav =
+            get(navId);
+
+        if (nav) {
+            nav.classList.add("active");
         }
 
-        if (cardContainer.children.length === 0) {
-            cardContainer.innerHTML = `
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align:center; padding: 20px;">
-                    <h3 style="font-size: 20px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">You're caught up!</h3>
-                    <p style="color:var(--text-muted); font-weight: 500; font-size: 14px; margin-bottom: 16px;">Check back later or reset your deck to view profiles again.</p>
-                    <button class="btn-primary" style="padding: 12px 24px; font-size: 14px;" onclick="renderCards(allStudents)">Reload Deck ⟳</button>
-                </div>`;
+    }
+
+}
+
+
+/* ============================================================
+   LOGIN
+============================================================ */
+
+function login() {
+
+    const button =
+        get("login-btn");
+
+    const text =
+        get("login-text");
+
+
+    button.disabled = true;
+
+    text.textContent = "Signing you in…";
+
+
+    setTimeout(() => {
+
+        isLoggedIn = true;
+
+        button.disabled = false;
+
+        text.textContent =
+            "Continue with Google";
+
+
+        navigateTo("screen-onboarding");
+
+    }, 650);
+
+}
+
+
+/* ============================================================
+   ONBOARDING
+============================================================ */
+
+function nextOnboardingStep() {
+
+    if (onboardingStep === 1) {
+
+        const name =
+            get("setup-name").value.trim();
+
+        if (!name) {
+
+            showToast(
+                "Please enter your name."
+            );
+
+            get("setup-name").focus();
+
+            return;
+
         }
-    }, 350);
+
+
+        onboardingStep = 2;
+
+        updateOnboardingUI();
+
+        return;
+
+    }
+
+
+    completeOnboarding();
+
 }
 
-function showMatchScreen(name, subject, image) {
-    currentMatchPartner = name;
-    currentMatchImage = image;
 
-    document.getElementById('match-name').textContent = name;
-    document.getElementById('match-subject').textContent = subject;
-    document.getElementById('match-image').style.backgroundImage = `url('${image}')`;
-    document.getElementById('match-overlay').style.display = 'flex';
+function updateOnboardingUI() {
+
+    const step1 =
+        get("onboarding-step-1");
+
+    const step2 =
+        get("onboarding-step-2");
+
+
+    const title =
+        get("onboarding-title");
+
+    const description =
+        get("onboarding-description");
+
+    const indicator =
+        get("wizard-step");
+
+    const progress =
+        get("wizard-progress");
+
+    const button =
+        get("onboarding-action");
+
+
+    if (onboardingStep === 1) {
+
+        step1.classList.add("active");
+
+        step2.classList.remove("active");
+
+        title.innerHTML =
+            "Tell us about<br>yourself.";
+
+        description.textContent =
+            "This helps us find study partners who are a good fit for you.";
+
+        indicator.textContent =
+            "1 of 2";
+
+        progress.style.width =
+            "50%";
+
+        button.textContent =
+            "Continue";
+
+    } else {
+
+        step1.classList.remove("active");
+
+        step2.classList.add("active");
+
+        title.innerHTML =
+            "What are you<br>studying?";
+
+        description.textContent =
+            "Choose the subjects you want help with.";
+
+        indicator.textContent =
+            "2 of 2";
+
+        progress.style.width =
+            "100%";
+
+        button.textContent =
+            "Start discovering";
+
+    }
+
 }
+
+
+/* ============================================================
+   SUBJECT SELECTION
+============================================================ */
+
+function toggleSubject(button) {
+
+    const subject =
+        button.dataset.subject;
+
+
+    button.classList.toggle("selected");
+
+
+    if (button.classList.contains("selected")) {
+
+        if (!selectedSubjects.includes(subject)) {
+
+            selectedSubjects.push(subject);
+
+        }
+
+    } else {
+
+        selectedSubjects =
+            selectedSubjects.filter(
+                item => item !== subject
+            );
+
+    }
+
+}
+
+
+/* ============================================================
+   COMPLETE ONBOARDING
+============================================================ */
+
+function completeOnboarding() {
+
+    if (selectedSubjects.length === 0) {
+
+        showToast(
+            "Choose at least one subject."
+        );
+
+        return;
+
+    }
+
+
+    const name =
+        get("setup-name").value.trim();
+
+
+    if (name) {
+
+        get("profile-display-name")
+            .textContent = name;
+
+    }
+
+
+    /*
+        Reset discovery for the beginning
+        of the demo journey.
+    */
+
+    currentStudentIndex = 0;
+
+    currentStudent =
+        students[0];
+
+
+    renderCards();
+
+
+    navigateTo(
+        "screen-home",
+        get("nav-discover")
+    );
+
+}
+
+
+/* ============================================================
+   DISCOVERY
+============================================================ */
+
+function renderCards(filter = "All") {
+
+    const container =
+        get("card-container");
+
+
+    if (!container) {
+        return;
+    }
+
+
+    container.innerHTML = "";
+
+
+    let visibleStudents =
+        students.filter(student => {
+
+            if (filter === "All") {
+                return true;
+            }
+
+            return student.subjects.includes(filter);
+
+        });
+
+
+    /*
+        Make sure there is always something
+        available for the demo.
+    */
+
+    if (visibleStudents.length === 0) {
+
+        visibleStudents =
+            students;
+
+    }
+
+
+    visibleStudents
+        .slice()
+        .reverse()
+        .forEach((student, reverseIndex) => {
+
+            const card =
+                createProfileCard(
+                    student,
+                    reverseIndex === visibleStudents.length - 1
+                );
+
+            container.appendChild(card);
+
+        });
+
+
+    /*
+        Current demo student is always
+        the first visible student.
+    */
+
+    currentStudent =
+        visibleStudents[0];
+
+}
+
+
+function createProfileCard(student, isTopCard) {
+
+    const card =
+        document.createElement("article");
+
+
+    card.className =
+        "profile-card";
+
+
+    card.dataset.studentId =
+        student.id;
+
+
+    if (!isTopCard) {
+
+        card.style.pointerEvents =
+            "none";
+
+    }
+
+
+    card.innerHTML = `
+
+        <div
+            class="profile-card-image"
+            style="
+                background-image:
+                url('${student.image}');
+            "
+        ></div>
+
+        <div
+            class="swipe-indicator like"
+        >
+            CONNECT
+        </div>
+
+        <div
+            class="swipe-indicator nope"
+        >
+            PASS
+        </div>
+
+        <div class="profile-card-content">
+
+            <div class="profile-card-topline">
+
+                ${
+                    student.online
+                        ? `<span class="profile-card-online"></span>`
+                        : ""
+                }
+
+                <span>
+                    ${
+                        student.online
+                            ? "Online now"
+                            : "Recently active"
+                    }
+                </span>
+
+            </div>
+
+            <div class="profile-card-name">
+                ${student.name}, ${student.age}
+            </div>
+
+            <div class="profile-card-major">
+                ${student.major}
+            </div>
+
+            <div class="profile-card-match">
+                ${student.match}% study match
+            </div>
+
+            <div class="profile-card-subjects">
+
+                ${student.subjects
+                    .map(subject =>
+                        `<span>${subject}</span>`
+                    )
+                    .join("")
+                }
+
+            </div>
+
+            <div class="profile-card-distance">
+                ${student.distance}
+            </div>
+
+        </div>
+    `;
+
+
+    /*
+        Tap card → detailed profile.
+    */
+
+    card.addEventListener("click", event => {
+
+        /*
+            Ignore clicks after a drag.
+        */
+
+        if (card.dataset.dragged === "true") {
+
+            card.dataset.dragged =
+                "false";
+
+            return;
+
+        }
+
+
+        openProfileDetail(student);
+
+    });
+
+
+    return card;
+
+}
+
+
+/* ============================================================
+   FILTERS
+============================================================ */
+
+function filterCards(subject, button) {
+
+    document
+        .querySelectorAll(".filter-chip")
+        .forEach(chip => {
+
+            chip.classList.remove("active");
+
+        });
+
+
+    button.classList.add("active");
+
+
+    renderCards(subject);
+
+}
+
+
+/* ============================================================
+   PROFILE DETAIL
+============================================================ */
+
+function openProfileDetail(student) {
+
+    currentStudent =
+        student;
+
+
+    get("detail-photo")
+        .style.backgroundImage =
+        `url('${student.image}')`;
+
+
+    get("detail-name")
+        .textContent =
+        `${student.name}, ${student.age}`;
+
+
+    get("detail-major")
+        .textContent =
+        `${student.major}`;
+
+
+    get("detail-bio")
+        .textContent =
+        student.bio;
+
+
+    get("detail-button-name")
+        .textContent =
+        student.name.split(" ")[0];
+
+
+    get("detail-subjects")
+        .innerHTML =
+        student.subjects
+            .map(subject =>
+                `<span>${subject}</span>`
+            )
+            .join("");
+
+
+    navigateTo(
+        "screen-profile-detail"
+    );
+
+}
+
+
+/* ============================================================
+   CONNECT FROM PROFILE
+============================================================ */
+
+function connectFromDetail() {
+
+    showMatchScreen(
+        currentStudent
+    );
+
+}
+
+
+/* ============================================================
+   SWIPE SYSTEM
+============================================================ */
+
+let dragStartX = 0;
+let dragCurrentX = 0;
+let isDragging = false;
+let activeCard = null;
+
+
+function setupSwipeEvents() {
+
+    document.addEventListener(
+        "pointerdown",
+        handlePointerDown
+    );
+
+    document.addEventListener(
+        "pointermove",
+        handlePointerMove
+    );
+
+    document.addEventListener(
+        "pointerup",
+        handlePointerUp
+    );
+
+}
+
+
+function getTopCard() {
+
+    const cards =
+        document.querySelectorAll(
+            ".profile-card"
+        );
+
+
+    if (!cards.length) {
+        return null;
+    }
+
+
+    return cards[
+        cards.length - 1
+    ];
+
+}
+
+
+function handlePointerDown(event) {
+
+    if (
+        currentScreen !==
+        "screen-home"
+    ) {
+        return;
+    }
+
+
+    const card =
+        getTopCard();
+
+
+    if (!card) {
+        return;
+    }
+
+
+    /*
+        Don't start dragging from
+        non-card UI.
+    */
+
+    if (
+        !event.target.closest(
+            ".profile-card"
+        )
+    ) {
+        return;
+    }
+
+
+    activeCard =
+        card;
+
+    isDragging = true;
+
+    dragStartX =
+        event.clientX;
+
+    dragCurrentX =
+        event.clientX;
+
+    card.dataset.dragged =
+        "false";
+
+    card.style.transition =
+        "none";
+
+}
+
+
+function handlePointerMove(event) {
+
+    if (
+        !isDragging ||
+        !activeCard
+    ) {
+        return;
+    }
+
+
+    dragCurrentX =
+        event.clientX;
+
+
+    const deltaX =
+        dragCurrentX -
+        dragStartX;
+
+
+    const rotation =
+        deltaX * 0.07;
+
+
+    activeCard.style.transform =
+        `translateX(${deltaX}px) rotate(${rotation}deg)`;
+
+
+    activeCard.dataset.dragged =
+        "true";
+
+
+    const like =
+        activeCard.querySelector(
+            ".swipe-indicator.like"
+        );
+
+    const nope =
+        activeCard.querySelector(
+            ".swipe-indicator.nope"
+        );
+
+
+    if (deltaX > 20) {
+
+        like.style.opacity =
+            Math.min(
+                deltaX / 100,
+                1
+            );
+
+        nope.style.opacity =
+            "0";
+
+    } else if (deltaX < -20) {
+
+        nope.style.opacity =
+            Math.min(
+                Math.abs(deltaX) / 100,
+                1
+            );
+
+        like.style.opacity =
+            "0";
+
+    } else {
+
+        like.style.opacity =
+            "0";
+
+        nope.style.opacity =
+            "0";
+
+    }
+
+}
+
+
+function handlePointerUp() {
+
+    if (
+        !isDragging ||
+        !activeCard
+    ) {
+        return;
+    }
+
+
+    const deltaX =
+        dragCurrentX -
+        dragStartX;
+
+
+    isDragging =
+        false;
+
+
+    if (Math.abs(deltaX) > 100) {
+
+        const direction =
+            deltaX > 0
+                ? "right"
+                : "left";
+
+
+        swipeCard(
+            activeCard,
+            direction
+        );
+
+    } else {
+
+        activeCard.style.transition =
+            "transform .35s var(--ease)";
+
+        activeCard.style.transform =
+            "";
+
+
+        const indicators =
+            activeCard.querySelectorAll(
+                ".swipe-indicator"
+            );
+
+
+        indicators.forEach(
+            indicator => {
+                indicator.style.opacity =
+                    "0";
+            }
+        );
+
+    }
+
+
+    activeCard =
+        null;
+
+}
+
+
+/* ============================================================
+   BUTTON SWIPE
+============================================================ */
+
+function manualSwipe(direction) {
+
+    const card =
+        getTopCard();
+
+
+    if (!card) {
+        return;
+    }
+
+
+    swipeCard(
+        card,
+        direction
+    );
+
+}
+
+
+/* ============================================================
+   SWIPE CARD
+============================================================ */
+
+function swipeCard(card, direction) {
+
+    card.style.transition =
+        "transform .4s var(--ease), opacity .35s ease";
+
+
+    const distance =
+        direction === "right"
+            ? window.innerWidth * 1.2
+            : -window.innerWidth * 1.2;
+
+
+    const rotation =
+        direction === "right"
+            ? 25
+            : -25;
+
+
+    card.style.transform =
+        `translateX(${distance}px) rotate(${rotation}deg)`;
+
+
+    card.style.opacity =
+        "0";
+
+
+    setTimeout(() => {
+
+        if (direction === "right") {
+
+            showMatchScreen(
+                currentStudent
+            );
+
+        }
+
+
+        advanceStudent();
+
+    }, 320);
+
+}
+
+
+/* ============================================================
+   NEXT STUDENT
+============================================================ */
+
+function advanceStudent() {
+
+    currentStudentIndex++;
+
+
+    if (
+        currentStudentIndex >=
+        students.length
+    ) {
+
+        currentStudentIndex = 0;
+
+    }
+
+
+    currentStudent =
+        students[
+            currentStudentIndex
+        ];
+
+
+    setTimeout(() => {
+
+        renderCards();
+
+    }, 100);
+
+}
+
+
+/* ============================================================
+   SAVE PROFILE
+============================================================ */
+
+function saveCurrentProfile() {
+
+    if (!currentStudent) {
+        return;
+    }
+
+
+    if (
+        !savedProfiles.includes(
+            currentStudent.id
+        )
+    ) {
+
+        savedProfiles.push(
+            currentStudent.id
+        );
+
+        showToast(
+            `${currentStudent.name} saved.`
+        );
+
+    } else {
+
+        showToast(
+            "Already saved."
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   MATCH
+============================================================ */
+
+function showMatchScreen(student) {
+
+    currentStudent =
+        student;
+
+
+    get("match-subject")
+        .textContent =
+        student.subjects[0];
+
+
+    get("match-image")
+        .style.backgroundImage =
+        `url('${student.image}')`;
+
+
+    const overlay =
+        get("match-overlay");
+
+
+    overlay.classList.add(
+        "visible"
+    );
+
+
+    /*
+        Stop background scrolling.
+    */
+
+    document.body.style.overflow =
+        "hidden";
+
+}
+
 
 function closeMatchScreen() {
-    document.getElementById('match-overlay').style.display = 'none';
+
+    get("match-overlay")
+        .classList.remove(
+            "visible"
+        );
+
+
+    document.body.style.overflow =
+        "";
+
+
+    navigateTo(
+        "screen-home",
+        get("nav-discover")
+    );
+
 }
+
 
 function goToChatFromMatch() {
-    closeMatchScreen();
-    openChatRoom(currentMatchPartner, currentMatchImage);
+
+    get("match-overlay")
+        .classList.remove(
+            "visible"
+        );
+
+
+    document.body.style.overflow =
+        "";
+
+
+    openChatRoom(
+        currentStudent.name,
+        currentStudent.image
+    );
+
 }
 
-// Active Live Chat Functionality
-function openChatRoom(partnerName, partnerImage) {
-    document.getElementById('chat-room-name').textContent = partnerName;
-    document.getElementById('chat-room-avatar').style.backgroundImage = `url('${partnerImage}')`;
-    
-    document.getElementById('app-header').style.display = 'none';
-    document.getElementById('bottom-nav').style.display = 'none';
-    
-    navigateTo('screen-chat-room');
-    scrollToBottom();
+
+/* ============================================================
+   CHAT
+============================================================ */
+
+function openChatRoom(
+    name,
+    image
+) {
+
+    get("chat-room-name")
+        .textContent =
+        name;
+
+
+    get("chat-room-avatar")
+        .style.backgroundImage =
+        `url('${image}')`;
+
+
+    /*
+        Chat is a full-screen
+        secondary state.
+    */
+
+    document
+        .querySelectorAll(".screen")
+        .forEach(screen => {
+
+            screen.classList.remove(
+                "active"
+            );
+
+        });
+
+
+    get("screen-chat-room")
+        .classList.add(
+            "active"
+        );
+
+
+    currentScreen =
+        "screen-chat-room";
+
+
+    get("chat-messages-scroll")
+        .scrollTop =
+        get("chat-messages-scroll")
+            .scrollHeight;
+
 }
+
 
 function closeChatRoom() {
-    document.getElementById('app-header').style.display = 'flex';
-    document.getElementById('bottom-nav').style.display = 'flex';
-    navigateTo('screen-chat', document.getElementById('nav-chat'));
+
+    navigateTo(
+        "screen-chat",
+        get("nav-messages")
+    );
+
 }
+
+
+/* ============================================================
+   CHAT MESSAGE
+============================================================ */
 
 function handleChatKeyPress(event) {
-    if (event.key === 'Enter') {
+
+    if (
+        event.key === "Enter"
+    ) {
+
+        event.preventDefault();
+
         sendChatMessage();
+
     }
+
 }
+
 
 function sendChatMessage() {
-    const inputField = document.getElementById('chat-message-input');
-    const text = inputField.value.trim();
-    if (!text) return;
 
-    const chatScroll = document.getElementById('chat-messages-scroll');
-    
-    // Append sent message bubble
-    const sentWrapper = document.createElement('div');
-    sentWrapper.className = 'message-wrapper sent';
-    sentWrapper.innerHTML = `
-        <div class="message-bubble"><p>${text}</p></div>
-        <span class="message-status">Sent</span>
+    const input =
+        get("chat-message-input");
+
+
+    const text =
+        input.value.trim();
+
+
+    if (!text) {
+        return;
+    }
+
+
+    const messages =
+        get("chat-messages-scroll");
+
+
+    const message =
+        document.createElement("div");
+
+
+    message.className =
+        "message sent";
+
+
+    const time =
+        new Date()
+            .toLocaleTimeString(
+                [],
+                {
+                    hour: "numeric",
+                    minute: "2-digit"
+                }
+            );
+
+
+    message.innerHTML = `
+
+        <div class="message-bubble">
+            ${escapeHTML(text)}
+        </div>
+
+        <span>
+            ${time} · Sent
+        </span>
+
     `;
-    chatScroll.appendChild(sentWrapper);
-    inputField.value = '';
-    scrollToBottom();
 
-    // Trigger simulated reply after a brief pause for realism
+
+    messages.appendChild(
+        message
+    );
+
+
+    input.value =
+        "";
+
+
+    messages.scrollTop =
+        messages.scrollHeight;
+
+
+    /*
+        Small demo response.
+    */
+
     setTimeout(() => {
-        const replyWrapper = document.createElement('div');
-        replyWrapper.className = 'message-wrapper received';
-        replyWrapper.innerHTML = `
-            <div class="message-bubble"><p>Got it! See you at the study hub soon 💡</p></div>
+
+        const reply =
+            document.createElement(
+                "div"
+            );
+
+
+        reply.className =
+            "message received";
+
+
+        reply.innerHTML = `
+
+            <div class="message-bubble">
+                Sounds good!
+            </div>
+
+            <span>
+                Just now
+            </span>
+
         `;
-        chatScroll.appendChild(replyWrapper);
-        scrollToBottom();
-    }, 1200);
+
+
+        messages.appendChild(
+            reply
+        );
+
+
+        messages.scrollTop =
+            messages.scrollHeight;
+
+    }, 900);
+
 }
 
-function scrollToBottom() {
-    const chatArea = document.getElementById('chat-messages-scroll');
-    setTimeout(() => {
-        chatArea.scrollTop = chatArea.scrollHeight;
-    }, 50);
+
+/* ============================================================
+   ESCAPE USER INPUT
+============================================================ */
+
+function escapeHTML(text) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.textContent =
+        text;
+
+
+    return div.innerHTML;
+
 }
 
-document.querySelectorAll('.toggle-switch').forEach(toggle => {
-    toggle.addEventListener('click', function() {
-        this.classList.toggle('active');
-    });
-});
+
+/* ============================================================
+   SCHEDULE CREATOR
+============================================================ */
+
+function openScheduleCreator() {
+
+    navigateTo(
+        "screen-schedule-create"
+    );
+
+}
+
+
+function closeScheduleCreator() {
+
+    navigateTo(
+        "screen-chat-room"
+    );
+
+}
+
+
+/* ============================================================
+   CONFIRM SESSION
+============================================================ */
+
+function confirmSession() {
+
+    const overlay =
+        get("session-confirmed");
+
+
+    overlay.classList.add(
+        "visible"
+    );
+
+
+    document.body.style.overflow =
+        "hidden";
+
+}
+
+
+function closeConfirmation() {
+
+    get("session-confirmed")
+        .classList.remove(
+            "visible"
+        );
+
+
+    document.body.style.overflow =
+        "";
+
+}
+
+
+function viewConfirmedSession() {
+
+    closeConfirmation();
+
+
+    navigateTo(
+        "screen-schedule",
+        get("nav-sessions")
+    );
+
+
+    showToast(
+        "Your session is confirmed."
+    );
+
+}
+
+
+/* ============================================================
+   FILTER BUTTON
+============================================================ */
+
+function toggleFilters() {
+
+    showToast(
+        "Filters are ready for the next update."
+    );
+
+}
+
+
+/* ============================================================
+   NOTIFICATIONS
+============================================================ */
+
+function showNotification() {
+
+    showToast(
+        "You're all caught up."
+    );
+
+}
+
+
+/* ============================================================
+   LOGOUT
+============================================================ */
+
+function logout() {
+
+    isLoggedIn =
+        false;
+
+
+    onboardingStep =
+        1;
+
+
+    updateOnboardingUI();
+
+
+    navigateTo(
+        "screen-splash"
+    );
+
+
+    showToast(
+        "Signed out."
+    );
+
+}
+
+
+/* ============================================================
+   WELCOME STATE
+============================================================ */
+
+function showWelcomeState() {
+
+    const header =
+        get("app-header");
+
+    const navigation =
+        get("bottom-navigation");
+
+
+    header.classList.remove(
+        "visible"
+    );
+
+
+    navigation.style.display =
+        "none";
+
+}
+
+
+/* ============================================================
+   TOAST
+============================================================ */
+
+let toastTimer;
+
+
+function showToast(message) {
+
+    const toast =
+        get("toast");
+
+
+    toast.textContent =
+        message;
+
+
+    toast.classList.add(
+        "visible"
+    );
+
+
+    clearTimeout(
+        toastTimer
+    );
+
+
+    toastTimer =
+        setTimeout(() => {
+
+            toast.classList.remove(
+                "visible"
+            );
+
+        }, 2200);
+
+}
