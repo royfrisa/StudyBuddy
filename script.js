@@ -1,1670 +1,211 @@
-
-/* ============================================================
-   STUDYBUDDY
-   Frontend prototype / demo interaction
-============================================================ */
-
-
-/* ============================================================
-   DEMO DATA
-============================================================ */
+/* StudyBuddy — rebuilt vanilla frontend demo */
 
 const students = [
-
-    {
-        id: 1,
-
-        name: "Paing Htoo Kyaw",
-        age: 20,
-
-        major: "Digital Technology",
-
-        subjects: [
-            "DTI224",
-            "GEN102"
-        ],
-
-        distance: "1.2 km away",
-
-        match: 92,
-
-        bio:
-            "Preparing for the DTI224 exam and looking for someone to review with.",
-
-        availability:
-            "Afternoon · Library",
-
-        image:
-            "https://thumbs.dreamstime.com/b/college-boy-holding-books-blurred-students-park-portrait-standing-35784759.jpg",
-
-        online: true
-
-    },
-
-
-    {
-        id: 2,
-
-        name: "Han Win Htun",
-        age: 20,
-
-        major: "Digital Technology",
-
-        subjects: [
-            "GEN102",
-            "GEN132"
-        ],
-
-        distance: "2.4 km away",
-
-        match: 86,
-
-        bio:
-            "Usually studies in the afternoon and likes working through practice questions together.",
-
-        availability:
-            "Afternoon · Study Room",
-
-        image:
-            "https://img.magnific.com/free-photo/portrait-student-boy_23-2147668972.jpg?semt=ais_test_b&w=740&q=80",
-
-        online: false
-
-    },
-
-
-    {
-        id: 3,
-
-        name: "Nay Chi",
-        age: 19,
-
-        major: "Digital Technology",
-
-        subjects: [
-            "DTI224",
-            "DTI201"
-        ],
-
-        distance: "3.1 km away",
-
-        match: 82,
-
-        bio:
-            "Looking for someone to prepare for programming and data classes with.",
-
-        availability:
-            "Evening · Cafe",
-
-        image:
-            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=900",
-
-        online: true
-
-    }
-
+  {id:1,name:'Paing Htoo Kyaw',age:20,major:'Digital Technology',subjects:['DTI224','GEN102'],distance:'1.2 km',match:92,time:'Today · 4:00 PM',availability:'Afternoon · Library',bio:'Preparing for the DTI224 exam and looking for someone to review with.',image:'/img/profile.jpg',online:true},
+  {id:2,name:'Aung Maw Oo',age:20,major:'Thai for Communication',subjects:['GEN102','GEN132'],distance:'2.4 km',match:86,time:'Tomorrow · 10:00 AM',availability:'Morning · Study room',bio:'Likes comparing notes and working through practice questions with a study partner.',image:'/img/profile.jpg',online:false},
+  {id:3,name:'Han Win Htun',age:20,major:'Digital Technology',subjects:['DTI224','DTI201'],distance:'2.9 km',match:84,time:'Friday · 1:00 PM',availability:'Afternoon · Library',bio:'Looking for focused study sessions before exams and project deadlines.',image:'/img/profile.jpg',online:true},
+  {id:4,name:'Kaung Khant Kyaw',age:21,major:'Digital Technology',subjects:['GEN132','DTI201'],distance:'3.4 km',match:79,time:'Saturday · 2:00 PM',availability:'Afternoon · Café',bio:'Enjoys collaborative study sessions and explaining difficult topics out loud.',image:'/img/profile.jpg',online:false},
+  {id:5,name:'Thar Htet Aung',age:19,major:'Digital Technology',subjects:['DTI224','GEN102'],distance:'1.6 km',match:88,time:'Sunday · 11:00 AM',availability:'Morning · Library',bio:'Preparing for DTI224 and GEN102 and looking for a consistent study partner.',image:'/img/profile.jpg',online:true}
 ];
 
+const state={screen:'welcome-screen',onboardingStep:1,subjects:new Set(['DTI224','GEN102']),filter:'All',pool:[...students],index:0,currentStudent:students[0],saved:new Set(),chatName:'Paing Htoo Kyaw'};
 
-/* ============================================================
-   APPLICATION STATE
-============================================================ */
+const $=id=>document.getElementById(id);
+const $$=sel=>Array.from(document.querySelectorAll(sel));
 
-let currentScreen = "screen-splash";
+function show(id){
+  $$('.screen').forEach(s=>s.classList.remove('active'));
+  $(id)?.classList.add('active');
+  state.screen=id;
+  const appScreens=['discover-screen','sessions-screen','messages-screen','profile-screen','profile-detail-screen','chat-screen','schedule-create-screen'];
+  $('topbar').classList.toggle('visible',appScreens.includes(id));
+  $('bottom-nav').classList.toggle('visible',['discover-screen','sessions-screen','messages-screen','profile-screen'].includes(id));
+  updateNav(id);
+  window.scrollTo(0,0);
+}
+function updateNav(id){
+  $$('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.target===id));
+}
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.remove('show'),2200)}
+function initials(name){return name.split(' ').slice(0,2).map(x=>x[0]).join('').toUpperCase()}
 
-let currentStudentIndex = 0;
+function setUserName(){const name=$('profile-name')?.value.trim()||'Group Two';$('display-name').textContent=name}
 
-let currentStudent = students[0];
-
-let onboardingStep = 1;
-
-let selectedSubjects = [
-    "DTI224",
-    "GEN102"
-];
-
-let savedProfiles = [];
-
-let isLoggedIn = false;
-
-
-/* ============================================================
-   DOM HELPERS
-============================================================ */
-
-function get(id) {
-    return document.getElementById(id);
+function renderCards(){
+  const stack=$('card-stack'); if(!stack)return; stack.innerHTML='';
+  let pool=state.filter==='All'?students:students.filter(s=>s.subjects.includes(state.filter));
+  if(!pool.length) pool=students;
+  const ordered=[...pool.slice(state.index),...pool.slice(0,state.index)].slice(0,4).reverse();
+  ordered.forEach((student,reverseIndex)=>{
+    const isTop=reverseIndex===ordered.length-1;
+    const card=document.createElement('article');card.className='study-card'+(isTop?' top':'');card.dataset.id=student.id;card.style.zIndex=20-reverseIndex;
+    if(!isTop){const depth=reverseIndex;card.style.transform=`translateY(${depth*10}px) scale(${1-depth*.035})`}
+    card.innerHTML=`
+      <img class="study-card-image" src="${student.image}" alt="${student.name}">
+      <div class="study-card-fallback"><span>${initials(student.name)}</span></div>
+      <div class="card-shade"></div>
+      ${student.online?'<div class="card-badge online">● Online now</div>':'<div class="card-badge">Recently active</div>'}
+      <div class="swipe-label like">LIKE</div><div class="swipe-label pass">PASS</div>
+      <div class="card-info"><h3>${student.name}, ${student.age}</h3><div class="card-major">${student.major}</div><div class="match-pill">${student.match}% study match</div><div class="card-meta"><span>${student.subjects[0]}</span><span>${student.distance}</span><span>${student.time}</span></div></div>`;
+    const img=card.querySelector('.study-card-image'), fallback=card.querySelector('.study-card-fallback');
+    img.addEventListener('load',()=>fallback.style.display='none');
+    img.addEventListener('error',()=>{img.classList.add('is-hidden');fallback.style.display='grid'});
+    card.addEventListener('click',e=>{if(card.dataset.dragged==='1'){card.dataset.dragged='0';return} if(isTop)openDetail(student)});
+    stack.appendChild(card);
+  });
+  state.currentStudent=pool[state.index%pool.length];
+  bindTopCard();
 }
 
+function bindTopCard(){
+  const card=$('.study-card.top');
+  if(!card)return;
 
-/* ============================================================
-   INITIALIZATION
-============================================================ */
+  let startX=0;
+  let startY=0;
+  let lastX=0;
+  let lastY=0;
+  let dragging=false;
+  let activePointerId=null;
 
-document.addEventListener("DOMContentLoaded", () => {
+  const like=card.querySelector('.like');
+  const pass=card.querySelector('.pass');
 
-    showWelcomeState();
+  const resetCard=()=>{
+    card.classList.remove('dragging');
+    card.style.transition='transform .3s var(--ease)';
+    card.style.transform='';
+    like.style.opacity=0;
+    pass.style.opacity=0;
+  };
 
-    setupSwipeEvents();
+  card.onpointerdown=(e)=>{
+    if(e.button!==undefined && e.pointerType==='mouse' && e.button!==0)return;
+    if(e.target.closest('button'))return;
 
-    renderCards();
+    e.preventDefault();
 
+    dragging=true;
+    activePointerId=e.pointerId;
+    startX=e.clientX;
+    startY=e.clientY;
+    lastX=e.clientX;
+    lastY=e.clientY;
+
+    card.dataset.dragged='0';
+    card.classList.add('dragging');
+
+    if(card.setPointerCapture){
+      try{card.setPointerCapture(e.pointerId)}catch(_){/* ignore */}
+    }
+  };
+
+  card.onpointermove=(e)=>{
+    if(!dragging || (activePointerId!==null && e.pointerId!==activePointerId))return;
+
+    e.preventDefault();
+
+    lastX=e.clientX;
+    lastY=e.clientY;
+
+    const dx=lastX-startX;
+    const dy=lastY-startY;
+
+    /* Keep vertical movement mostly neutral so the card feels horizontal. */
+    const rot=dx*0.055;
+
+    card.style.transition='none';
+    card.style.transform=`translate3d(${dx}px,${Math.min(Math.max(dy*0.08,-18),18)}px,0) rotate(${rot}deg)`;
+
+    if(Math.abs(dx)>8 || Math.abs(dy)>8){
+      card.dataset.dragged='1';
+    }
+
+    like.style.opacity=Math.min(Math.max(dx/90,0),1);
+    pass.style.opacity=Math.min(Math.max(-dx/90,0),1);
+  };
+
+  const finishPointer=(e)=>{
+    if(!dragging)return;
+    if(activePointerId!==null && e.pointerId!==undefined && e.pointerId!==activePointerId)return;
+
+    const dx=lastX-startX;
+    dragging=false;
+
+    if(card.releasePointerCapture && activePointerId!==null){
+      try{card.releasePointerCapture(activePointerId)}catch(_){/* ignore */}
+    }
+
+    activePointerId=null;
+
+    card.classList.remove('dragging');
+
+    if(Math.abs(dx)>75){
+      swipe(dx>0?'right':'left',card);
+    }else{
+      resetCard();
+    }
+  };
+
+  card.onpointerup=finishPointer;
+  card.onpointercancel=()=>{
+    dragging=false;
+    activePointerId=null;
+    resetCard();
+  };
+
+  /* Prevent the browser's native image/text drag behavior. */
+  card.ondragstart=(e)=>e.preventDefault();
+}
+
+function swipe(direction,card= $('.study-card.top')){
+  if(!card)return;const student=students.find(s=>String(s.id)===card.dataset.id)||state.currentStudent;card.style.transition='transform .35s var(--ease),opacity .25s ease';card.style.opacity='0';card.style.transform=`translateX(${direction==='right'?window.innerWidth*1.3:-window.innerWidth*1.3}px) rotate(${direction==='right'?25:-25}deg)`;setTimeout(()=>{state.index=(state.index+1)%students.length;renderCards();if(direction==='right')openMatch(student)},300)
+}
+function openDetail(student){state.currentStudent=student;$('detail-media').style.backgroundImage=`url("${student.image}")`;$('detail-name').textContent=`${student.name}, ${student.age}`;$('detail-major').textContent=student.major;$('detail-status').textContent=student.online?'● Online':'Recently active';$('detail-score').textContent=student.match+'%';$('detail-subjects').innerHTML=student.subjects.map(s=>`<span>${s}</span>`).join('');$('detail-bio').textContent=student.bio;$('detail-availability').textContent=student.availability;$('detail-connect').textContent=`Connect with ${student.name.split(' ')[0]}`;show('profile-detail-screen')}
+function openMatch(student){$('match-subject').textContent=student.subjects[0];$('match-score').textContent=student.match+'% match';$('match-photo').style.backgroundImage=`url("${student.image}")`;$('match-modal').classList.add('visible');}
+function closeMatch(){ $('match-modal').classList.remove('visible') }
+function openChat(name,image){state.chatName=name;$('chat-name').textContent=name;if(image)$('chat-avatar').style.backgroundImage=`url("${image}")`;show('chat-screen');setTimeout(()=>{const b=$('chat-body');b.scrollTop=b.scrollHeight},30)}
+function confirmSession(){ $('confirmation-modal').classList.add('visible') }
+
+function bindNavigation(){
+  $$('.nav-item').forEach(btn=>btn.addEventListener('click',()=>show(btn.dataset.target)));
+  $('open-profile').addEventListener('click',()=>show('profile-screen'));
+  $('notification-btn').addEventListener('click',()=>toast("You're all caught up."));
+  $('detail-back').addEventListener('click',()=>show('discover-screen'));
+  $('detail-connect').addEventListener('click',()=>openMatch(state.currentStudent));
+  $('match-keep').addEventListener('click',()=>{closeMatch();show('discover-screen')});
+  $('match-chat').addEventListener('click',()=>{const s=state.currentStudent;closeMatch();openChat(s.name,s.image)});
+  $('schedule-from-chat').addEventListener('click',()=>show('schedule-create-screen'));
+  $('schedule-back').addEventListener('click',()=>show('chat-screen'));
+  $('confirm-session').addEventListener('click',confirmSession);
+  $('close-confirmation').addEventListener('click',()=>$('confirmation-modal').classList.remove('visible'));
+  $('view-session').addEventListener('click',()=>{ $('confirmation-modal').classList.remove('visible');show('sessions-screen');toast('Session confirmed.')});
+  $('pass-btn').addEventListener('click',()=>swipe('left'));
+  $('connect-btn').addEventListener('click',()=>swipe('right'));
+  $('save-btn').addEventListener('click',()=>{const s=state.currentStudent;state.saved.add(s.id);toast(`${s.name} saved.`)});
+  $('logout-btn').addEventListener('click',()=>{show('welcome-screen');$('topbar').classList.remove('visible');$('bottom-nav').classList.remove('visible');toast('Signed out.')});
+  $$('.conversation').forEach(row=>row.addEventListener('click',()=>openChat(row.dataset.chat,'')));
+  $$('.match-bubble').forEach(row=>row.addEventListener('click',()=>openChat(row.dataset.chat||'Paing Htoo Kyaw','')));
+  $('chat-back').addEventListener('click',()=>show('messages-screen'));
+  $('send-message').addEventListener('click',sendMessage);$('chat-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendMessage()});
+  $$('.chip').forEach(chip=>chip.addEventListener('click',()=>{state.filter=chip.dataset.filter;state.index=0;$$('.chip').forEach(c=>c.classList.remove('active'));chip.classList.add('active');renderCards()}));
+  $$('.subject-option').forEach(btn=>btn.addEventListener('click',()=>{btn.classList.toggle('selected');const subject=btn.dataset.subject;if(btn.classList.contains('selected'))state.subjects.add(subject);else state.subjects.delete(subject)}));
+}
+function sendMessage(){const input=$('chat-input');const text=input.value.trim();if(!text)return;const bubble=document.createElement('div');bubble.className='bubble sent';bubble.textContent=text;$('chat-body').appendChild(bubble);input.value='';$('chat-body').scrollTop=$('chat-body').scrollHeight;setTimeout(()=>{const reply=document.createElement('div');reply.className='bubble received';reply.textContent='Sounds good!';$('chat-body').appendChild(reply);$('chat-body').scrollTop=$('chat-body').scrollHeight},700)}
+function nextWizard(){
+  if(state.onboardingStep===1){setUserName();state.onboardingStep=2;$('wizard-step-1').classList.remove('active');$('wizard-step-2').classList.add('active');$('wizard-count').textContent='2 / 2';$('wizard-progress').style.width='100%';$('wizard-title').innerHTML='What are you<br>studying?';$('wizard-description').textContent='Choose the subjects you want help with.';$('wizard-action').textContent='Start discovering';return}
+  if(!state.subjects.size){toast('Choose at least one subject.');return}setUserName();show('discover-screen');renderCards();
+}
+function sendToOnboarding(){show('onboarding-screen')}
+
+$('member-continue').addEventListener('click',()=>{$('member-overlay').classList.add('closed');document.body.style.overflow='';show('welcome-screen')});
+$('login-btn').addEventListener('click',()=>{const b=$('login-btn');b.disabled=true;b.querySelector('span:last-child').textContent='Signing you in…';setTimeout(()=>{b.disabled=false;b.querySelector('span:last-child').textContent='Continue with Google';show('onboarding-screen')},550)});
+$('onboarding-back').addEventListener('click',()=>{if(state.onboardingStep===2){state.onboardingStep=1;$('wizard-step-2').classList.remove('active');$('wizard-step-1').classList.add('active');$('wizard-count').textContent='1 / 2';$('wizard-progress').style.width='50%';$('wizard-title').innerHTML='Tell us about<br>yourself.';$('wizard-description').textContent='A little context helps us recommend better study partners.'}else show('welcome-screen')});
+$('wizard-action').addEventListener('click',nextWizard);
+
+document.addEventListener('DOMContentLoaded',()=>{
+  bindNavigation();
+  renderCards();
+  document.body.style.overflow='hidden';
+  setTimeout(()=>document.body.style.overflow='',350);
 });
-
-
-/* ============================================================
-   SCREEN NAVIGATION
-============================================================ */
-
-function navigateTo(screenId, navButton = null) {
-
-    const screens = document.querySelectorAll(".screen");
-
-    screens.forEach(screen => {
-
-        screen.classList.remove("active");
-
-    });
-
-
-    const target = get(screenId);
-
-    if (!target) {
-        console.warn(`Screen not found: ${screenId}`);
-        return;
-    }
-
-
-    target.classList.add("active");
-
-    currentScreen = screenId;
-
-
-    /*
-        Main application screens show the
-        app header and bottom navigation.
-    */
-
-    const appScreens = [
-        "screen-home",
-        "screen-profile-detail",
-        "screen-schedule",
-        "screen-chat",
-        "screen-profile"
-    ];
-
-    const isAppScreen =
-        appScreens.includes(screenId);
-
-
-    const header = get("app-header");
-
-    const navigation =
-        get("bottom-navigation");
-
-
-    if (isAppScreen) {
-
-        header.classList.add("visible");
-
-        navigation.style.display = "grid";
-
-    } else {
-
-        header.classList.remove("visible");
-
-        navigation.style.display = "none";
-
-    }
-
-
-    /*
-        Update active bottom navigation.
-    */
-
-    if (navButton) {
-
-        document
-            .querySelectorAll(".nav-item")
-            .forEach(item => {
-                item.classList.remove("active");
-            });
-
-        navButton.classList.add("active");
-
-    } else {
-
-        updateNavigationState(screenId);
-
-    }
-
-
-    /*
-        Scroll selected screen to top.
-    */
-
-    target.scrollTop = 0;
-
-}
-
-
-/* ============================================================
-   NAVIGATION STATE
-============================================================ */
-
-function updateNavigationState(screenId) {
-
-    const mapping = {
-
-        "screen-home":
-            "nav-discover",
-
-        "screen-schedule":
-            "nav-sessions",
-
-        "screen-chat":
-            "nav-messages",
-
-        "screen-profile":
-            "nav-profile"
-
-    };
-
-
-    document
-        .querySelectorAll(".nav-item")
-        .forEach(item => {
-            item.classList.remove("active");
-        });
-
-
-    const navId = mapping[screenId];
-
-    if (navId) {
-
-        const nav =
-            get(navId);
-
-        if (nav) {
-            nav.classList.add("active");
-        }
-
-    }
-
-}
-
-
-/* ============================================================
-   LOGIN
-============================================================ */
-
-function login() {
-
-    const button =
-        get("login-btn");
-
-    const text =
-        get("login-text");
-
-
-    button.disabled = true;
-
-    text.textContent = "Signing you in…";
-
-
-    setTimeout(() => {
-
-        isLoggedIn = true;
-
-        button.disabled = false;
-
-        text.textContent =
-            "Continue with Google";
-
-
-        navigateTo("screen-onboarding");
-
-    }, 650);
-
-}
-
-
-/* ============================================================
-   ONBOARDING
-============================================================ */
-
-function nextOnboardingStep() {
-
-    if (onboardingStep === 1) {
-
-        const name =
-            get("setup-name").value.trim();
-
-        if (!name) {
-
-            showToast(
-                "Please enter your name."
-            );
-
-            get("setup-name").focus();
-
-            return;
-
-        }
-
-
-        onboardingStep = 2;
-
-        updateOnboardingUI();
-
-        return;
-
-    }
-
-
-    completeOnboarding();
-
-}
-
-
-function updateOnboardingUI() {
-
-    const step1 =
-        get("onboarding-step-1");
-
-    const step2 =
-        get("onboarding-step-2");
-
-
-    const title =
-        get("onboarding-title");
-
-    const description =
-        get("onboarding-description");
-
-    const indicator =
-        get("wizard-step");
-
-    const progress =
-        get("wizard-progress");
-
-    const button =
-        get("onboarding-action");
-
-
-    if (onboardingStep === 1) {
-
-        step1.classList.add("active");
-
-        step2.classList.remove("active");
-
-        title.innerHTML =
-            "Tell us about<br>yourself.";
-
-        description.textContent =
-            "This helps us find study partners who are a good fit for you.";
-
-        indicator.textContent =
-            "1 of 2";
-
-        progress.style.width =
-            "50%";
-
-        button.textContent =
-            "Continue";
-
-    } else {
-
-        step1.classList.remove("active");
-
-        step2.classList.add("active");
-
-        title.innerHTML =
-            "What are you<br>studying?";
-
-        description.textContent =
-            "Choose the subjects you want help with.";
-
-        indicator.textContent =
-            "2 of 2";
-
-        progress.style.width =
-            "100%";
-
-        button.textContent =
-            "Start discovering";
-
-    }
-
-}
-
-
-/* ============================================================
-   SUBJECT SELECTION
-============================================================ */
-
-function toggleSubject(button) {
-
-    const subject =
-        button.dataset.subject;
-
-
-    button.classList.toggle("selected");
-
-
-    if (button.classList.contains("selected")) {
-
-        if (!selectedSubjects.includes(subject)) {
-
-            selectedSubjects.push(subject);
-
-        }
-
-    } else {
-
-        selectedSubjects =
-            selectedSubjects.filter(
-                item => item !== subject
-            );
-
-    }
-
-}
-
-
-/* ============================================================
-   COMPLETE ONBOARDING
-============================================================ */
-
-function completeOnboarding() {
-
-    if (selectedSubjects.length === 0) {
-
-        showToast(
-            "Choose at least one subject."
-        );
-
-        return;
-
-    }
-
-
-    const name =
-        get("setup-name").value.trim();
-
-
-    if (name) {
-
-        get("profile-display-name")
-            .textContent = name;
-
-    }
-
-
-    /*
-        Reset discovery for the beginning
-        of the demo journey.
-    */
-
-    currentStudentIndex = 0;
-
-    currentStudent =
-        students[0];
-
-
-    renderCards();
-
-
-    navigateTo(
-        "screen-home",
-        get("nav-discover")
-    );
-
-}
-
-
-/* ============================================================
-   DISCOVERY
-============================================================ */
-
-function renderCards(filter = "All") {
-
-    const container =
-        get("card-container");
-
-
-    if (!container) {
-        return;
-    }
-
-
-    container.innerHTML = "";
-
-
-    let visibleStudents =
-        students.filter(student => {
-
-            if (filter === "All") {
-                return true;
-            }
-
-            return student.subjects.includes(filter);
-
-        });
-
-
-    /*
-        Make sure there is always something
-        available for the demo.
-    */
-
-    if (visibleStudents.length === 0) {
-
-        visibleStudents =
-            students;
-
-    }
-
-
-    visibleStudents
-        .slice()
-        .reverse()
-        .forEach((student, reverseIndex) => {
-
-            const card =
-                createProfileCard(
-                    student,
-                    reverseIndex === visibleStudents.length - 1
-                );
-
-            container.appendChild(card);
-
-        });
-
-
-    /*
-        Current demo student is always
-        the first visible student.
-    */
-
-    currentStudent =
-        visibleStudents[0];
-
-}
-
-
-function createProfileCard(student, isTopCard) {
-
-    const card =
-        document.createElement("article");
-
-
-    card.className =
-        "profile-card";
-
-
-    card.dataset.studentId =
-        student.id;
-
-
-    if (!isTopCard) {
-
-        card.style.pointerEvents =
-            "none";
-
-    }
-
-
-    card.innerHTML = `
-
-        <div
-            class="profile-card-image"
-            style="
-                background-image:
-                url('${student.image}');
-            "
-        ></div>
-
-        <div
-            class="swipe-indicator like"
-        >
-            CONNECT
-        </div>
-
-        <div
-            class="swipe-indicator nope"
-        >
-            PASS
-        </div>
-
-        <div class="profile-card-content">
-
-            <div class="profile-card-topline">
-
-                ${
-                    student.online
-                        ? `<span class="profile-card-online"></span>`
-                        : ""
-                }
-
-                <span>
-                    ${
-                        student.online
-                            ? "Online now"
-                            : "Recently active"
-                    }
-                </span>
-
-            </div>
-
-            <div class="profile-card-name">
-                ${student.name}, ${student.age}
-            </div>
-
-            <div class="profile-card-major">
-                ${student.major}
-            </div>
-
-            <div class="profile-card-match">
-                ${student.match}% study match
-            </div>
-
-            <div class="profile-card-subjects">
-
-                ${student.subjects
-                    .map(subject =>
-                        `<span>${subject}</span>`
-                    )
-                    .join("")
-                }
-
-            </div>
-
-            <div class="profile-card-distance">
-                ${student.distance}
-            </div>
-
-        </div>
-    `;
-
-
-    /*
-        Tap card → detailed profile.
-    */
-
-    card.addEventListener("click", event => {
-
-        /*
-            Ignore clicks after a drag.
-        */
-
-        if (card.dataset.dragged === "true") {
-
-            card.dataset.dragged =
-                "false";
-
-            return;
-
-        }
-
-
-        openProfileDetail(student);
-
-    });
-
-
-    return card;
-
-}
-
-
-/* ============================================================
-   FILTERS
-============================================================ */
-
-function filterCards(subject, button) {
-
-    document
-        .querySelectorAll(".filter-chip")
-        .forEach(chip => {
-
-            chip.classList.remove("active");
-
-        });
-
-
-    button.classList.add("active");
-
-
-    renderCards(subject);
-
-}
-
-
-/* ============================================================
-   PROFILE DETAIL
-============================================================ */
-
-function openProfileDetail(student) {
-
-    currentStudent =
-        student;
-
-
-    get("detail-photo")
-        .style.backgroundImage =
-        `url('${student.image}')`;
-
-
-    get("detail-name")
-        .textContent =
-        `${student.name}, ${student.age}`;
-
-
-    get("detail-major")
-        .textContent =
-        `${student.major}`;
-
-
-    get("detail-bio")
-        .textContent =
-        student.bio;
-
-
-    get("detail-button-name")
-        .textContent =
-        student.name.split(" ")[0];
-
-
-    get("detail-subjects")
-        .innerHTML =
-        student.subjects
-            .map(subject =>
-                `<span>${subject}</span>`
-            )
-            .join("");
-
-
-    navigateTo(
-        "screen-profile-detail"
-    );
-
-}
-
-
-/* ============================================================
-   CONNECT FROM PROFILE
-============================================================ */
-
-function connectFromDetail() {
-
-    showMatchScreen(
-        currentStudent
-    );
-
-}
-
-
-/* ============================================================
-   SWIPE SYSTEM
-============================================================ */
-
-let dragStartX = 0;
-let dragCurrentX = 0;
-let isDragging = false;
-let activeCard = null;
-
-
-function setupSwipeEvents() {
-
-    document.addEventListener(
-        "pointerdown",
-        handlePointerDown
-    );
-
-    document.addEventListener(
-        "pointermove",
-        handlePointerMove
-    );
-
-    document.addEventListener(
-        "pointerup",
-        handlePointerUp
-    );
-
-}
-
-
-function getTopCard() {
-
-    const cards =
-        document.querySelectorAll(
-            ".profile-card"
-        );
-
-
-    if (!cards.length) {
-        return null;
-    }
-
-
-    return cards[
-        cards.length - 1
-    ];
-
-}
-
-
-function handlePointerDown(event) {
-
-    if (
-        currentScreen !==
-        "screen-home"
-    ) {
-        return;
-    }
-
-
-    const card =
-        getTopCard();
-
-
-    if (!card) {
-        return;
-    }
-
-
-    /*
-        Don't start dragging from
-        non-card UI.
-    */
-
-    if (
-        !event.target.closest(
-            ".profile-card"
-        )
-    ) {
-        return;
-    }
-
-
-    activeCard =
-        card;
-
-    isDragging = true;
-
-    dragStartX =
-        event.clientX;
-
-    dragCurrentX =
-        event.clientX;
-
-    card.dataset.dragged =
-        "false";
-
-    card.style.transition =
-        "none";
-
-}
-
-
-function handlePointerMove(event) {
-
-    if (
-        !isDragging ||
-        !activeCard
-    ) {
-        return;
-    }
-
-
-    dragCurrentX =
-        event.clientX;
-
-
-    const deltaX =
-        dragCurrentX -
-        dragStartX;
-
-
-    const rotation =
-        deltaX * 0.07;
-
-
-    activeCard.style.transform =
-        `translateX(${deltaX}px) rotate(${rotation}deg)`;
-
-
-    activeCard.dataset.dragged =
-        "true";
-
-
-    const like =
-        activeCard.querySelector(
-            ".swipe-indicator.like"
-        );
-
-    const nope =
-        activeCard.querySelector(
-            ".swipe-indicator.nope"
-        );
-
-
-    if (deltaX > 20) {
-
-        like.style.opacity =
-            Math.min(
-                deltaX / 100,
-                1
-            );
-
-        nope.style.opacity =
-            "0";
-
-    } else if (deltaX < -20) {
-
-        nope.style.opacity =
-            Math.min(
-                Math.abs(deltaX) / 100,
-                1
-            );
-
-        like.style.opacity =
-            "0";
-
-    } else {
-
-        like.style.opacity =
-            "0";
-
-        nope.style.opacity =
-            "0";
-
-    }
-
-}
-
-
-function handlePointerUp() {
-
-    if (
-        !isDragging ||
-        !activeCard
-    ) {
-        return;
-    }
-
-
-    const deltaX =
-        dragCurrentX -
-        dragStartX;
-
-
-    isDragging =
-        false;
-
-
-    if (Math.abs(deltaX) > 100) {
-
-        const direction =
-            deltaX > 0
-                ? "right"
-                : "left";
-
-
-        swipeCard(
-            activeCard,
-            direction
-        );
-
-    } else {
-
-        activeCard.style.transition =
-            "transform .35s var(--ease)";
-
-        activeCard.style.transform =
-            "";
-
-
-        const indicators =
-            activeCard.querySelectorAll(
-                ".swipe-indicator"
-            );
-
-
-        indicators.forEach(
-            indicator => {
-                indicator.style.opacity =
-                    "0";
-            }
-        );
-
-    }
-
-
-    activeCard =
-        null;
-
-}
-
-
-/* ============================================================
-   BUTTON SWIPE
-============================================================ */
-
-function manualSwipe(direction) {
-
-    const card =
-        getTopCard();
-
-
-    if (!card) {
-        return;
-    }
-
-
-    swipeCard(
-        card,
-        direction
-    );
-
-}
-
-
-/* ============================================================
-   SWIPE CARD
-============================================================ */
-
-function swipeCard(card, direction) {
-
-    card.style.transition =
-        "transform .4s var(--ease), opacity .35s ease";
-
-
-    const distance =
-        direction === "right"
-            ? window.innerWidth * 1.2
-            : -window.innerWidth * 1.2;
-
-
-    const rotation =
-        direction === "right"
-            ? 25
-            : -25;
-
-
-    card.style.transform =
-        `translateX(${distance}px) rotate(${rotation}deg)`;
-
-
-    card.style.opacity =
-        "0";
-
-
-    setTimeout(() => {
-
-        if (direction === "right") {
-
-            showMatchScreen(
-                currentStudent
-            );
-
-        }
-
-
-        advanceStudent();
-
-    }, 320);
-
-}
-
-
-/* ============================================================
-   NEXT STUDENT
-============================================================ */
-
-function advanceStudent() {
-
-    currentStudentIndex++;
-
-
-    if (
-        currentStudentIndex >=
-        students.length
-    ) {
-
-        currentStudentIndex = 0;
-
-    }
-
-
-    currentStudent =
-        students[
-            currentStudentIndex
-        ];
-
-
-    setTimeout(() => {
-
-        renderCards();
-
-    }, 100);
-
-}
-
-
-/* ============================================================
-   SAVE PROFILE
-============================================================ */
-
-function saveCurrentProfile() {
-
-    if (!currentStudent) {
-        return;
-    }
-
-
-    if (
-        !savedProfiles.includes(
-            currentStudent.id
-        )
-    ) {
-
-        savedProfiles.push(
-            currentStudent.id
-        );
-
-        showToast(
-            `${currentStudent.name} saved.`
-        );
-
-    } else {
-
-        showToast(
-            "Already saved."
-        );
-
-    }
-
-}
-
-
-/* ============================================================
-   MATCH
-============================================================ */
-
-function showMatchScreen(student) {
-
-    currentStudent =
-        student;
-
-
-    get("match-subject")
-        .textContent =
-        student.subjects[0];
-
-
-    get("match-image")
-        .style.backgroundImage =
-        `url('${student.image}')`;
-
-
-    const overlay =
-        get("match-overlay");
-
-
-    overlay.classList.add(
-        "visible"
-    );
-
-
-    /*
-        Stop background scrolling.
-    */
-
-    document.body.style.overflow =
-        "hidden";
-
-}
-
-
-function closeMatchScreen() {
-
-    get("match-overlay")
-        .classList.remove(
-            "visible"
-        );
-
-
-    document.body.style.overflow =
-        "";
-
-
-    navigateTo(
-        "screen-home",
-        get("nav-discover")
-    );
-
-}
-
-
-function goToChatFromMatch() {
-
-    get("match-overlay")
-        .classList.remove(
-            "visible"
-        );
-
-
-    document.body.style.overflow =
-        "";
-
-
-    openChatRoom(
-        currentStudent.name,
-        currentStudent.image
-    );
-
-}
-
-
-/* ============================================================
-   CHAT
-============================================================ */
-
-function openChatRoom(
-    name,
-    image
-) {
-
-    get("chat-room-name")
-        .textContent =
-        name;
-
-
-    get("chat-room-avatar")
-        .style.backgroundImage =
-        `url('${image}')`;
-
-
-    /*
-        Chat is a full-screen
-        secondary state.
-    */
-
-    document
-        .querySelectorAll(".screen")
-        .forEach(screen => {
-
-            screen.classList.remove(
-                "active"
-            );
-
-        });
-
-
-    get("screen-chat-room")
-        .classList.add(
-            "active"
-        );
-
-
-    currentScreen =
-        "screen-chat-room";
-
-
-    get("chat-messages-scroll")
-        .scrollTop =
-        get("chat-messages-scroll")
-            .scrollHeight;
-
-}
-
-
-function closeChatRoom() {
-
-    navigateTo(
-        "screen-chat",
-        get("nav-messages")
-    );
-
-}
-
-
-/* ============================================================
-   CHAT MESSAGE
-============================================================ */
-
-function handleChatKeyPress(event) {
-
-    if (
-        event.key === "Enter"
-    ) {
-
-        event.preventDefault();
-
-        sendChatMessage();
-
-    }
-
-}
-
-
-function sendChatMessage() {
-
-    const input =
-        get("chat-message-input");
-
-
-    const text =
-        input.value.trim();
-
-
-    if (!text) {
-        return;
-    }
-
-
-    const messages =
-        get("chat-messages-scroll");
-
-
-    const message =
-        document.createElement("div");
-
-
-    message.className =
-        "message sent";
-
-
-    const time =
-        new Date()
-            .toLocaleTimeString(
-                [],
-                {
-                    hour: "numeric",
-                    minute: "2-digit"
-                }
-            );
-
-
-    message.innerHTML = `
-
-        <div class="message-bubble">
-            ${escapeHTML(text)}
-        </div>
-
-        <span>
-            ${time} · Sent
-        </span>
-
-    `;
-
-
-    messages.appendChild(
-        message
-    );
-
-
-    input.value =
-        "";
-
-
-    messages.scrollTop =
-        messages.scrollHeight;
-
-
-    /*
-        Small demo response.
-    */
-
-    setTimeout(() => {
-
-        const reply =
-            document.createElement(
-                "div"
-            );
-
-
-        reply.className =
-            "message received";
-
-
-        reply.innerHTML = `
-
-            <div class="message-bubble">
-                Sounds good!
-            </div>
-
-            <span>
-                Just now
-            </span>
-
-        `;
-
-
-        messages.appendChild(
-            reply
-        );
-
-
-        messages.scrollTop =
-            messages.scrollHeight;
-
-    }, 900);
-
-}
-
-
-/* ============================================================
-   ESCAPE USER INPUT
-============================================================ */
-
-function escapeHTML(text) {
-
-    const div =
-        document.createElement(
-            "div"
-        );
-
-
-    div.textContent =
-        text;
-
-
-    return div.innerHTML;
-
-}
-
-
-/* ============================================================
-   SCHEDULE CREATOR
-============================================================ */
-
-function openScheduleCreator() {
-
-    navigateTo(
-        "screen-schedule-create"
-    );
-
-}
-
-
-function closeScheduleCreator() {
-
-    navigateTo(
-        "screen-chat-room"
-    );
-
-}
-
-
-/* ============================================================
-   CONFIRM SESSION
-============================================================ */
-
-function confirmSession() {
-
-    const overlay =
-        get("session-confirmed");
-
-
-    overlay.classList.add(
-        "visible"
-    );
-
-
-    document.body.style.overflow =
-        "hidden";
-
-}
-
-
-function closeConfirmation() {
-
-    get("session-confirmed")
-        .classList.remove(
-            "visible"
-        );
-
-
-    document.body.style.overflow =
-        "";
-
-}
-
-
-function viewConfirmedSession() {
-
-    closeConfirmation();
-
-
-    navigateTo(
-        "screen-schedule",
-        get("nav-sessions")
-    );
-
-
-    showToast(
-        "Your session is confirmed."
-    );
-
-}
-
-
-/* ============================================================
-   FILTER BUTTON
-============================================================ */
-
-function toggleFilters() {
-
-    showToast(
-        "Filters are ready for the next update."
-    );
-
-}
-
-
-/* ============================================================
-   NOTIFICATIONS
-============================================================ */
-
-function showNotification() {
-
-    showToast(
-        "You're all caught up."
-    );
-
-}
-
-
-/* ============================================================
-   LOGOUT
-============================================================ */
-
-function logout() {
-
-    isLoggedIn =
-        false;
-
-
-    onboardingStep =
-        1;
-
-
-    updateOnboardingUI();
-
-
-    navigateTo(
-        "screen-splash"
-    );
-
-
-    showToast(
-        "Signed out."
-    );
-
-}
-
-
-/* ============================================================
-   WELCOME STATE
-============================================================ */
-
-function showWelcomeState() {
-
-    const header =
-        get("app-header");
-
-    const navigation =
-        get("bottom-navigation");
-
-
-    header.classList.remove(
-        "visible"
-    );
-
-
-    navigation.style.display =
-        "none";
-
-}
-
-
-/* ============================================================
-   TOAST
-============================================================ */
-
-let toastTimer;
-
-
-function showToast(message) {
-
-    const toast =
-        get("toast");
-
-
-    toast.textContent =
-        message;
-
-
-    toast.classList.add(
-        "visible"
-    );
-
-
-    clearTimeout(
-        toastTimer
-    );
-
-
-    toastTimer =
-        setTimeout(() => {
-
-            toast.classList.remove(
-                "visible"
-            );
-
-        }, 2200);
-
-}
